@@ -251,16 +251,23 @@ class Mine:
             if not self.is_on_surface:
                 # 向上浮动
                 self.y -= self.speed
-                if self.y <= WATER_SURFACE_HEIGHT + 5:
+                if self.y <= WATER_SURFACE_HEIGHT - 10:  # 浮到驱逐舰的水平线
                     self.is_on_surface = True
-                    self.y = WATER_SURFACE_HEIGHT + 5
+                    self.y = WATER_SURFACE_HEIGHT - 10   # 与驱逐舰在同一水平
                     print(f"⚠️ Mine surfaced at position: ({self.x}, {self.y})")
             else:
-                # 在水面停留
+                # 在水面停留，增加横向漂移
                 self.surface_timer += 1
-                if self.surface_timer >= 60:  # 1秒后消失
+                # 水雷在水面缓慢漂移
+                self.x += 0.3 * (1 if self.x < SCREEN_WIDTH // 2 else -1)  # 向屏幕中心漂移
+                
+                # 延长停留时间到5秒，并检查边界
+                if self.surface_timer >= 300:  # 5秒后消失
                     self.active = False
                     print(f"🌊 Mine disappeared from surface")
+                elif self.x < -20 or self.x > SCREEN_WIDTH + 20:
+                    self.active = False
+                    print(f"🌊 Mine drifted off screen")
         
         return not self.active
     
@@ -524,8 +531,8 @@ class Missile:
             elif self.phase == 3:  # 垂直向上飞行阶段
                 self.y -= self.speed
                 
-                # 检查是否冲出水面，但不停留
-                if self.y <= WATER_SURFACE_HEIGHT + 5 and not self.is_on_surface:
+                # 检查是否冲出水面，在驱逐舰高度停留
+                if self.y <= WATER_SURFACE_HEIGHT - 10 and not self.is_on_surface:
                     self.is_on_surface = True
                     print(f"🚀 Missile surfaced at position: ({self.x}, {self.y})")
                 
@@ -612,7 +619,7 @@ class SubmarineHunterGame:
         }
         
         # 性能优化 - 减少调试输出
-        self.verbose_logging = False  # 设为False以减少输出
+        self.verbose_logging = False  # 关闭详细调试输出
         
         # 游戏正式开始，潜艇将随机生成
         
@@ -743,6 +750,12 @@ class SubmarineHunterGame:
             if mine.active and mine.is_on_surface:
                 mine_rect = mine.get_rect()
                 ship_rect = self.ship.get_rect()
+                
+                # 添加调试信息
+                if self.verbose_logging:
+                    distance = math.sqrt((mine.x - self.ship.x)**2 + (mine.y - self.ship.y)**2)
+                    print(f"💣 Mine check: mine({mine.x:.1f}, {mine.y:.1f}) ship({self.ship.x:.1f}, {self.ship.y:.1f}) distance: {distance:.1f}")
+                
                 if mine_rect.colliderect(ship_rect):
                     # 水雷击中驱逐舰
                     if self.ship.take_damage(self.god_mode):
