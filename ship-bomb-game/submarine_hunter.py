@@ -734,6 +734,8 @@ class SubmarineHunterGame:
             sub_center_x = submarine.x + submarine.width // 2
             sub_center_y = submarine.y + submarine.height // 2
             self.chain_explosion(sub_center_x, sub_center_y, SUBMARINE_EXPLOSION_RADIUS, 'chain')
+        
+        return chain_count
     
     def check_collisions(self):
         # 检查水雷与驱逐舰的碰撞（仅在水面时）
@@ -982,8 +984,7 @@ class SubmarineHunterGame:
         # 更新爆炸效果
         explosions_to_remove = []
         for i, explosion in enumerate(self.explosions):
-            explosion.update()
-            if explosion.timer <= 0:
+            if explosion.update():  # update()返回True表示爆炸结束
                 explosions_to_remove.append(i)
         
         # 性能优化：批量移除爆炸效果
